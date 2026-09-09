@@ -1,0 +1,178 @@
+[
+  {
+    "name": "Sri Krishna Infra & Developers",
+    "contact_person": "Ramesh Reddy",
+    "email": "ramesh@srikrishnainfra.in",
+    "phone": "+91 98490 12345",
+    "industry": "Real Estate",
+    "languages": [
+      "Telugu",
+      "English"
+    ],
+    "virtual_number": "+91 40 4821 5566",
+    "plan": "Growth",
+    "status": "active",
+    "monthly_minutes_limit": 2500,
+    "webhook_url": "https://crm.srikrishnainfra.in/api/webhooks/voice",
+    "id": "cli-hyd-001",
+    "minutes_used": 742,
+    "leads_captured": 48,
+    "appointments_booked": 21,
+    "created_at": "2026-08-15 10:30",
+    "recent_calls": [
+      {
+        "call_id": "call-101",
+        "caller_phone": "+91 98480 99887",
+        "call_time": "Today, 02:45 PM",
+        "duration_seconds": 124,
+        "language_detected": "Telugu",
+        "status": "completed",
+        "summary": "Customer inquired about 3BHK flats in Gachibowli under 1.5 Cr. Booked site visit for Saturday 11 AM.",
+        "transcript": [
+          {
+            "speaker": "Caller",
+            "text": "\u0c28\u0c2e\u0c38\u0c4d\u0c24\u0c47 \u0c05\u0c02\u0c21\u0c3f, \u0c17\u0c1a\u0c4d\u0c1a\u0c3f\u0c2c\u0c4c\u0c32\u0c3f\u0c32\u0c4b 3BHK \u0c2b\u0c4d\u0c32\u0c3e\u0c1f\u0c4d\u0c38\u0c4d \u0c09\u0c28\u0c4d\u0c28\u0c3e\u0c2f\u0c3e?"
+          },
+          {
+            "speaker": "AI Agent",
+            "text": "\u0c28\u0c2e\u0c38\u0c4d\u0c24\u0c47! \u0c05\u0c35\u0c41\u0c28\u0c02\u0c21\u0c3f, \u0c17\u0c1a\u0c4d\u0c1a\u0c3f\u0c2c\u0c4c\u0c32\u0c3f\u0c32\u0c4b \u0c2e\u0c3e \u0c32\u0c17\u0c4d\u0c1c\u0c30\u0c40 3BHK \u0c2a\u0c4d\u0c30\u0c3e\u0c1c\u0c46\u0c15\u0c4d\u0c1f\u0c4d \u0c05\u0c02\u0c26\u0c41\u0c2c\u0c3e\u0c1f\u0c41\u0c32\u0c4b \u0c09\u0c02\u0c26\u0c3f. \u0c2e\u0c40 \u0c2c\u0c21\u0c4d\u0c1c\u0c46\u0c1f\u0c4d \u0c0e\u0c02\u0c24\u0c35\u0c30\u0c15\u0c41 \u0c05\u0c28\u0c41\u0c15\u0c41\u0c02\u0c1f\u0c41\u0c28\u0c4d\u0c28\u0c3e\u0c30\u0c41?"
+          },
+          {
+            "speaker": "Caller",
+            "text": "\u0c38\u0c41\u0c2e\u0c3e\u0c30\u0c41 1.5 \u0c15\u0c4b\u0c1f\u0c4d\u0c32 \u0c35\u0c30\u0c15\u0c41."
+          },
+          {
+            "speaker": "AI Agent",
+            "text": "\u0c16\u0c1a\u0c4d\u0c1a\u0c3f\u0c24\u0c02\u0c17\u0c3e \u0c38\u0c30\u0c3f\u0c2a\u0c4b\u0c24\u0c41\u0c02\u0c26\u0c02\u0c21\u0c3f. \u0c36\u0c28\u0c3f\u0c35\u0c3e\u0c30\u0c02 \u0c09\u0c26\u0c2f\u0c02 11 \u0c17\u0c02\u0c1f\u0c32\u0c15\u0c41 \u0c38\u0c48\u0c1f\u0c4d \u0c35\u0c3f\u0c1c\u0c3f\u0c1f\u0c4d \u0c37\u0c46\u0c21\u0c4d\u0c2f\u0c42\u0c32\u0c4d \u0c1a\u0c47\u0c2f\u0c2e\u0c02\u0c1f\u0c3e\u0c30\u0c3e?"
+          }
+        ]
+      },
+      {
+        "call_id": "call-102",
+        "caller_phone": "+91 97000 44332",
+        "call_time": "Today, 11:15 AM",
+        "duration_seconds": 78,
+        "language_detected": "English",
+        "status": "completed",
+        "summary": "Asked for brochure and pricing sheet of Kokapet commercial plots.",
+        "transcript": []
+      }
+    ],
+    "metadata": {}
+  },
+  {
+    "name": "Apollo Multispeciality Clinic",
+    "contact_person": "Dr. Sunita Rao",
+    "email": "appointments@apolloclinicvja.com",
+    "phone": "+91 94401 55667",
+    "industry": "Clinics & Healthcare",
+    "languages": [
+      "Telugu",
+      "Hindi",
+      "English"
+    ],
+    "virtual_number": "+91 866 254 9988",
+    "plan": "Growth",
+    "status": "active",
+    "monthly_minutes_limit": 1500,
+    "webhook_url": "https://api.apolloclinicvja.com/webhooks/calls",
+    "id": "cli-vja-002",
+    "minutes_used": 520,
+    "leads_captured": 82,
+    "appointments_booked": 67,
+    "created_at": "2026-08-20 14:15",
+    "recent_calls": [
+      {
+        "call_id": "call-201",
+        "caller_phone": "+91 94900 11223",
+        "call_time": "Today, 01:20 PM",
+        "duration_seconds": 95,
+        "language_detected": "Telugu",
+        "status": "completed",
+        "summary": "Booked cardiologist consultation with Dr. S. Murthy for tomorrow at 5:30 PM.",
+        "transcript": []
+      }
+    ],
+    "metadata": {}
+  },
+  {
+    "name": "Narayana IIT & NEET Academy",
+    "contact_person": "P. Venkatesh",
+    "email": "admissions@narayanavzg.edu.in",
+    "phone": "+91 98850 77889",
+    "industry": "Coaching & EdTech",
+    "languages": [
+      "Telugu",
+      "English"
+    ],
+    "virtual_number": "+91 891 278 3344",
+    "plan": "Starter",
+    "status": "active",
+    "monthly_minutes_limit": 1000,
+    "webhook_url": null,
+    "id": "cli-vzg-003",
+    "minutes_used": 310,
+    "leads_captured": 35,
+    "appointments_booked": 14,
+    "created_at": "2026-09-01 09:00",
+    "recent_calls": [],
+    "metadata": {}
+  },
+  {
+    "name": "UrbanFix Premium Home Services",
+    "contact_person": "Arvind Sharma",
+    "email": "ops@urbanfix.in",
+    "phone": "+91 99800 22334",
+    "industry": "Local Services",
+    "languages": [
+      "Hindi",
+      "English"
+    ],
+    "virtual_number": "+91 80 4912 7700",
+    "plan": "Pro",
+    "status": "active",
+    "monthly_minutes_limit": 5000,
+    "webhook_url": "https://urbanfix.in/api/v1/voice-leads",
+    "id": "cli-blr-004",
+    "minutes_used": 1840,
+    "leads_captured": 145,
+    "appointments_booked": 110,
+    "created_at": "2026-07-10 16:45",
+    "recent_calls": [
+      {
+        "call_id": "call-401",
+        "caller_phone": "+91 98110 33445",
+        "call_time": "Today, 03:10 PM",
+        "duration_seconds": 110,
+        "language_detected": "Hindi",
+        "status": "completed",
+        "summary": "Air conditioner deep repair service requested for Koramangala tomorrow 10 AM.",
+        "transcript": []
+      }
+    ],
+    "metadata": {}
+  },
+  {
+    "name": "Vedic Solar Energy Solutions",
+    "contact_person": "Sanjay Varma",
+    "email": "contact@vedicsolar.co.in",
+    "phone": "+91 96180 88990",
+    "industry": "Local Services",
+    "languages": [
+      "Telugu",
+      "English"
+    ],
+    "virtual_number": "+91 40 6718 2211",
+    "plan": "Starter",
+    "status": "active",
+    "monthly_minutes_limit": 1000,
+    "webhook_url": null,
+    "id": "cli-hyd-005",
+    "minutes_used": 24,
+    "leads_captured": 3,
+    "appointments_booked": 1,
+    "created_at": "2026-09-06 11:20",
+    "recent_calls": [],
+    "metadata": {}
+  }
+]

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SK Voice Agents - Admin console for managing client accounts, virtual telephony numbers, multilingual AI agents, and live call analytics." />
+    <title>SK Voice Agents | Admin Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/admin.css" />
+  </head>
+  <body>
+    <div class="admin-app">
+      <!-- Top Navigation -->
+      <header class="admin-header">
+        <div class="header-brand">
+          <a href="/" class="brand-link" title="Go to website">
+            <span class="brand-badge">S</span>
+            <div class="brand-titles">
+              <span class="brand-name">SK <b>Voice Agents</b></span>
+              <span class="brand-portal-tag">Admin Console</span>
+            </div>
+          </a>
+        </div>
+
+        <div class="header-center">
+          <div class="gateway-status" id="gateway-status">
+            <span class="pulse-dot"></span>
+            <span>Telephony Gateway: <b>Active (8kHz μ-law)</b></span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-admin-test-call" class="btn btn-outline" style="border-color: #10b981; color: #a7f3d0;">
+            <span class="btn-icon">🎙</span> Test Live Call
+          </button>
+          <button id="btn-refresh" class="btn btn-ghost" title="Refresh client list">
+            <span class="btn-icon">↻</span> Refresh
+          </button>
+          <a href="/docs" target="_blank" class="btn btn-ghost">
+            <span class="btn-icon">⚡</span> API Docs
+          </a>
+          <a href="/" class="btn btn-outline">
+            View Live Site ↗
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Layout -->
+      <main class="admin-content">
+        <!-- KPI Analytics Overview -->
+        <section class="kpi-grid" aria-label="Key Performance Indicators">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-clients">🏢</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Clients</span>
+              <h2 class="kpi-value" id="kpi-total-clients">-</h2>
+              <span class="kpi-sub" id="kpi-active-clients">- active calling accounts</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-agents">☎</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Active Phone Numbers</span>
+              <h2 class="kpi-value" id="kpi-active-numbers">-</h2>
+              <span class="kpi-sub">Twilio / Telephony lines connected</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-minutes">⏱</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Minutes Consumed</span>
+              <h2 class="kpi-value" id="kpi-total-minutes">-</h2>
+              <span class="kpi-sub">Telephony speech time this month</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-leads">🎯</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Qualified Leads</span>
+              <h2 class="kpi-value" id="kpi-total-leads">-</h2>
+              <span class="kpi-sub" id="kpi-total-appointments">- appointments booked</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Controls Toolbar -->
+        <section class="controls-panel">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="search-input"
+              class="search-input"
+              placeholder="Search by business, contact, phone, or virtual number..."
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="filters-wrap">
+            <div class="filter-group">
+              <label for="filter-industry">Industry:</label>
+              <select id="filter-industry" class="filter-select">
+                <option value="All">All Industries</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Clinics & Healthcare">Clinics & Healthcare</option>
+                <option value="Coaching & EdTech">Coaching & EdTech</option>
+                <option value="Local Services">Local Services</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="filter-status">Status:</label>
+              <select id="filter-status" class="filter-select">
+                <option value="All">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="onboarding">Onboarding</option>
+              </select>
+            </div>
+
+            <button id="btn-add-client" class="btn btn-primary">
+              <span class="btn-icon">+</span> Add Client
+            </button>
+          </div>
+        </section>
+
+        <!-- Clients Table Container -->
+        <section class="table-container">
+          <table class="clients-table" id="clients-table">
+            <thead>
+              <tr>
+                <th>Business Client</th>
+                <th>Industry & Plan</th>
+                <th>Languages</th>
+                <th>Virtual Number</th>
+                <th>Monthly Quota</th>
+                <th>Status</th>
+                <th class="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody">
+              <!-- Rendered dynamically by admin.js -->
+              <tr>
+                <td colspan="7" class="td-loading">
+                  <div class="spinner"></div>
+                  <span>Loading business clients...</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Empty state when search/filter returns nothing -->
+          <div class="empty-state hidden" id="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>No clients found</h3>
+            <p>Try adjusting your search query or filters, or add a new business client.</p>
+            <button class="btn btn-outline" id="btn-reset-filters">Reset Filters</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Client Modal (Add / Edit) -->
+    <div class="modal-backdrop hidden" id="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="modal-title">Add Business Client</h3>
+          <button class="btn-close" id="modal-close" aria-label="Close dialog">×</button>
+        </div>
+
+        <form id="client-form" class="modal-form">
+          <input type="hidden" id="form-client-id" value="" />
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="form-name">Business Name *</label>
+              <input type="text" id="form-name" required placeholder="e.g. Sri Krishna Infra" />
+            </div>
+            <div class="form-group flex-1">
+              <label for="form-contact">Contact Person *</label>
+              <input type="text" id="form-contact" required placeholder="e.g. Ramesh Reddy" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="form-phone">Contact Phone *</label>
+              <input type="tel" id="form-phone" required placeholder="+91 98490 00000" />
+            </div>
+            <div class="form-group flex-1">
+              <label for="form-email">Contact Email *</label>
+              <input type="email" id="form-email" required placeholder="contact@example.in" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="form-industry">Industry Category *</label>
+              <select id="form-industry" required>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Clinics & Healthcare">Clinics & Healthcare</option>
+                <option value="Coaching & EdTech">Coaching & EdTech</option>
+                <option value="Local Services">Local Services</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="form-virtual-number">Assigned Virtual Number</label>
+              <input type="text" id="form-virtual-number" placeholder="+91 40 4821 0000" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="form-plan">Plan Tier</label>
+              <select id="form-plan">
+                <option value="Starter">Starter (1,000 mins)</option>
+                <option value="Growth">Growth (2,500 mins)</option>
+                <option value="Pro">Pro / Enterprise (5,000+ mins)</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="form-minutes-limit">Monthly Minutes Quota</label>
+              <input type="number" id="form-minutes-limit" min="100" step="100" value="1000" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Supported Telecalling Languages</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="languages" value="Telugu" checked />
+                <span>Telugu (తెలుగు)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="languages" value="Hindi" checked />
+                <span>Hindi (हिंदी)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="languages" value="English" checked />
+                <span>English</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="form-webhook">CRM / WhatsApp Webhook URL (optional)</label>
+            <input type="url" id="form-webhook" placeholder="https://yourcrm.com/api/voice-leads" />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" id="modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-client">Save Client</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Slide-over Client Detail Drawer -->
+    <aside class="drawer-backdrop hidden" id="drawer-backdrop">
+      <div class="drawer" id="drawer">
+        <div class="drawer-header">
+          <div class="drawer-titles">
+            <span class="drawer-eyebrow" id="drawer-industry">Real Estate</span>
+            <h2 id="drawer-name">Client Name</h2>
+            <div class="drawer-tags" id="drawer-tags"></div>
+          </div>
+          <button class="btn-close" id="drawer-close" aria-label="Close drawer">×</button>
+        </div>
+
+        <div class="drawer-body">
+          <!-- Client Metrics Summary -->
+          <div class="drawer-section">
+            <h4 class="drawer-section-title">Calling Performance & Quota</h4>
+            <div class="drawer-stats-grid">
+              <div class="drawer-stat">
+                <small>Minutes Consumed</small>
+                <b id="drawer-minutes-display">0 / 1000</b>
+                <div class="mini-progress">
+                  <div class="mini-progress-bar" id="drawer-progress-bar" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="drawer-stat">
+                <small>Qualified Leads</small>
+                <b id="drawer-leads-display">0</b>
+              </div>
+              <div class="drawer-stat">
+                <small>Bookings Made</small>
+                <b id="drawer-bookings-display">0</b>
+              </div>
+              <div class="drawer-stat">
+                <small>Virtual Line</small>
+                <b id="drawer-number-display" class="mono-text">-</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration & Contact Details -->
+          <div class="drawer-section">
+            <h4 class="drawer-section-title">Account Configuration</h4>
+            <ul class="detail-list">
+              <li>
+                <span>Contact Person:</span>
+                <strong id="drawer-contact">-</strong>
+              </li>
+              <li>
+                <span>Phone / Email:</span>
+                <strong id="drawer-phone-email">-</strong>
+              </li>
+              <li>
+                <span>Subscription Plan:</span>
+                <strong id="drawer-plan">-</strong>
+              </li>
+              <li>
+                <span>Webhook Integration:</span>
+                <span id="drawer-webhook" class="mono-text">-</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Live Call Logs -->
+          <div class="drawer-section">
+            <div class="drawer-section-header">
+              <h4 class="drawer-section-title">Recent Customer Calls</h4>
+              <span class="badge badge-subtle" id="drawer-call-count">0 calls</span>
+            </div>
+
+            <div class="call-logs-list" id="drawer-calls-list">
+              <!-- Injected by admin.js -->
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-footer">
+          <button id="btn-drawer-toggle-status" class="btn btn-outline flex-1">Pause Account</button>
+          <button id="btn-drawer-edit" class="btn btn-primary flex-1">Edit Client</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/assets/web_phone.js"></script>
+    <script src="/assets/admin.js"></script>
+  </body>
+</html>
