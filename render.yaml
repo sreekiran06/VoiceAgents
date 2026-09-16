@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: voice-call-agent
+    env: python
+    buildCommand: pip install -r requirements.txt && pip install -e .
+    startCommand: uvicorn voice_call_agent.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_NAME
+        value: Voice Call Agent
+      - key: ENVIRONMENT
+        value: production
+      - key: EXPLABS_API_KEY
+        sync: false
+      - key: EXPLABS_BASE_URL
+        value: https://api.experientiallabs.ai/v1
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_DEFAULT_LANGUAGES
+        value: en-IN,te-IN,hi-IN
+      - key: SARVAM_PACE
+        value: "1.0"
+      - key: SARVAM_VOICE_TE_IN
+        value: kavitha
+      - key: SARVAM_VOICE_HI_IN
+        value: ritu
+      - key: SARVAM_VOICE_EN_IN
+        value: ishita
+      - key: TELEPHONY_PROVIDER
+        value: twilio
+      - key: VALIDATE_TELEPHONY_SIGNATURES
+        value: "false"
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_ASSISTANT_ID
+        sync: false
+      - key: VAPI_PHONE_NUMBER_ID
+        sync: false
