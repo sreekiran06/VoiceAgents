@@ -157,7 +157,18 @@ async def test_end_to_end_voice_turn_over_websocket():
     silent_b64 = base64.b64encode(silent_mulaw).decode("utf-8")
 
     from unittest.mock import patch
+    from voice_call_agent.providers.speech.stt import TranscriptionResult
+    from voice_call_agent.providers.speech.tts import SynthesisResult
+
     with patch(
+        "voice_call_agent.api.telephony.stt_provider.transcribe",
+        new_callable=AsyncMock,
+        return_value=TranscriptionResult(text="Hello!", language="en"),
+    ), patch(
+        "voice_call_agent.api.telephony.orchestrator.tts.synthesize",
+        new_callable=AsyncMock,
+        return_value=SynthesisResult(audio_mulaw_bytes=b"\xff" * 320, duration_seconds=0.04),
+    ), patch(
         "voice_call_agent.api.telephony.orchestrator.llm.generate_response",
         new_callable=AsyncMock,
         return_value={"role": "assistant", "content": "Hello!"},

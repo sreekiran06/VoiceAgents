@@ -22,5 +22,31 @@ class Settings(BaseSettings):
     vapi_assistant_id: str = ""  # Set after creating assistant via /vapi/setup
     vapi_phone_number_id: str = ""  # Set after buying a Vapi phone number
 
+    # Sarvam AI configuration  https://dashboard.sarvam.ai
+    sarvam_api_key: str = ""
+    # Comma-separated BCP-47 codes — first entry is the primary/fallback language.
+    # Example: "en-IN,te-IN,hi-IN"
+    sarvam_default_languages: str = "en-IN,te-IN,hi-IN"
+    sarvam_pace: float = 1.0        # TTS speed: 0.5–2.0
+
+    # Per-language voice overrides (Bulbul speaker names)
+    sarvam_voice_en_in: str = "ishita"   # Indian English
+    sarvam_voice_te_in: str = "kavitha"  # Telugu
+    sarvam_voice_hi_in: str = "ritu"     # Hindi
+
+    @property
+    def sarvam_language_list(self) -> list[str]:
+        """Ordered list of default languages; first entry is the primary."""
+        return [lang.strip() for lang in self.sarvam_default_languages.split(",") if lang.strip()]
+
+    @property
+    def sarvam_voice_map(self) -> dict[str, str]:
+        """Maps BCP-47 language codes to their configured speaker voices."""
+        return {
+            "en-IN": self.sarvam_voice_en_in,
+            "te-IN": self.sarvam_voice_te_in,
+            "hi-IN": self.sarvam_voice_hi_in,
+        }
+
 
 settings = Settings()

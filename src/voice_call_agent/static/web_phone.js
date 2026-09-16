@@ -278,8 +278,11 @@
         }
       };
 
+      const muteNode = this.audioContext.createGain();
+      muteNode.gain.value = 0;
       source.connect(this.processorNode);
-      this.processorNode.connect(this.audioContext.destination);
+      this.processorNode.connect(muteNode);
+      muteNode.connect(this.audioContext.destination);
     }
 
     handleServerEvent(data) {

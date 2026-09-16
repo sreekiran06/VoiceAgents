@@ -10,12 +10,15 @@ client = TestClient(app)
 
 def test_outbound_call_missing_credentials():
     # Calling without Twilio credentials should return HTTP 400 with descriptive error
-    response = client.post(
-        "/telephony/call",
-        json={"to_number": "+919876543210"},
-    )
-    assert response.status_code == 400
-    assert "Missing" in response.json()["detail"]
+    from voice_call_agent.core.config import settings
+
+    with patch.object(settings, "twilio_account_sid", ""):
+        response = client.post(
+            "/telephony/call",
+            json={"to_number": "+919876543210"},
+        )
+        assert response.status_code == 400
+        assert "Missing" in response.json()["detail"]
 
 
 @pytest.mark.anyio
