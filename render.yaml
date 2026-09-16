@@ -3,8 +3,10 @@ services:
     name: voice-call-agent
     env: python
     buildCommand: pip install -r requirements.txt && pip install -e .
-    startCommand: uvicorn voice_call_agent.main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=src uvicorn voice_call_agent.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHONPATH
+        value: src
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: APP_NAME
