@@ -6,11 +6,22 @@ from typing import Any
 from voice_call_agent.agent.prompts import SYSTEM_PROMPT
 from voice_call_agent.agent.tools.lead_tools import register_default_tools
 from voice_call_agent.agent.tools.registry import ToolRegistry
+from voice_call_agent.core.config import settings
 from voice_call_agent.models.conversation import CallSession, Message
 from voice_call_agent.providers.llm.client import ExpLabsLanguageModel
+from voice_call_agent.providers.llm.gemini import GeminiLanguageModel
 from voice_call_agent.providers.speech.tts import MockTextToSpeechProvider, TextToSpeechProvider
 
 logger = logging.getLogger(__name__)
+
+
+def _get_llm():
+    """Select the LLM provider based on config."""
+    if settings.llm_provider == "gemini" and settings.gemini_api_key:
+        logger.info("Using Google Gemini LLM (model: gemini-2.0-flash)")
+        return GeminiLanguageModel()
+    logger.info("Using ExpLabs LLM (model: qwen3.8-27b)")
+    return ExpLabsLanguageModel()
 
 
 class VoiceAgentOrchestrator:
@@ -23,7 +34,7 @@ class VoiceAgentOrchestrator:
         tools: ToolRegistry | None = None,
         system_prompt: str = SYSTEM_PROMPT,
     ) -> None:
-        self.llm = llm or ExpLabsLanguageModel()
+        self.llm = llm or _get_llm()
         self.tts = tts or MockTextToSpeechProvider()
         if tools is not None:
             self.tools = tools

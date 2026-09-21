@@ -75,12 +75,12 @@ class SarvamSTT(SpeechToTextProvider):
     def __init__(
         self,
         api_key: str,
-        model: str = "saarika:v2.5",
+        model: str = "saaras:v3",
         default_languages: list[str] | None = None,
     ) -> None:
         self.api_key = api_key
         self.model = model
-        self.default_languages: list[str] = default_languages or ["en-IN", "te-IN", "hi-IN"]
+        self.default_languages: list[str] = default_languages or ["te-IN", "en-IN", "hi-IN"]
 
     @property
     def primary_language(self) -> str:

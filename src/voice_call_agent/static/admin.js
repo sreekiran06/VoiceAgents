@@ -477,9 +477,87 @@ btnRefresh.addEventListener("click", () => {
   loadDashboardData();
 });
 
+// Outbound Call Modal Elements
+const outboundModalBackdrop = document.getElementById("outbound-modal-backdrop");
+const outboundModalClose = document.getElementById("outbound-modal-close");
+const outboundModalCancel = document.getElementById("outbound-modal-cancel");
+const outboundCallForm = document.getElementById("outbound-call-form");
+const outboundProvider = document.getElementById("outbound-provider");
+const outboundAppIdGroup = document.getElementById("outbound-app-id-group");
+const btnAdminOutboundCall = document.getElementById("btn-admin-outbound-call");
+
+function openOutboundModal() {
+  if (outboundModalBackdrop) {
+    outboundModalBackdrop.classList.remove("hidden");
+  }
+}
+
+function closeOutboundModal() {
+  if (outboundModalBackdrop) {
+    outboundModalBackdrop.classList.add("hidden");
+  }
+}
+
+if (outboundProvider && outboundAppIdGroup) {
+  outboundProvider.addEventListener("change", () => {
+    if (outboundProvider.value === "exotel") {
+      outboundAppIdGroup.style.display = "block";
+    } else {
+      outboundAppIdGroup.style.display = "none";
+    }
+  });
+}
+
+btnAdminOutboundCall?.addEventListener("click", openOutboundModal);
+outboundModalClose?.addEventListener("click", closeOutboundModal);
+outboundModalCancel?.addEventListener("click", closeOutboundModal);
+outboundModalBackdrop?.addEventListener("click", e => {
+  if (e.target === outboundModalBackdrop) closeOutboundModal();
+});
+
+outboundCallForm?.addEventListener("submit", async e => {
+  e.preventDefault();
+  const provider = outboundProvider.value;
+  const toNumber = document.getElementById("outbound-phone").value.trim();
+  const appId = document.getElementById("outbound-app-id").value.trim() || undefined;
+  const callerId = document.getElementById("outbound-caller-id").value.trim() || undefined;
+
+  const btnSubmit = document.getElementById("btn-submit-outbound-call");
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = "Placing call...";
+
+  try {
+    const res = await fetch("/telephony/call", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to_number: toNumber,
+        from_number: callerId,
+        provider: provider,
+        app_id: appId,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || data.error || "Failed to trigger call");
+    }
+
+    showToast(`Call initiated via ${provider.toUpperCase()}! SID: ${data.call_sid || "queued"}`, "success");
+    closeOutboundModal();
+    loadDashboardData();
+  } catch (err) {
+    showToast(`Call error: ${err.message}`, "error");
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = "Initiate Outbound Call";
+  }
+});
+
 document.getElementById("btn-admin-test-call")?.addEventListener("click", () => {
   if (window.webPhone) window.webPhone.show();
 });
 
 // Initial boot
 loadDashboardData();
+

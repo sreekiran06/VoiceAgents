@@ -7,15 +7,27 @@ class Settings(BaseSettings):
     app_name: str = "Voice Call Agent"
     environment: str = "development"
     public_base_url: str = "http://localhost:8000"
+    # LLM Provider: "gemini" or "explabs"
+    llm_provider: str = "gemini"
     explabs_api_key: str = ""
     explabs_base_url: str = "https://api.experientiallabs.ai/v1"
+    gemini_api_key: str = ""
 
     # Telephony configuration
-    telephony_provider: str = "twilio"
+    telephony_provider: str = "twilio"  # "twilio" or "exotel"
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_from_number: str = ""
     validate_telephony_signatures: bool = False
+
+    # Exotel configuration (https://my.exotel.com/apps#installed-apps)
+    exotel_account_sid: str = ""
+    exotel_api_key: str = ""
+    exotel_api_token: str = ""
+    exotel_subdomain: str = "api.exotel.com"  # or "api.in.exotel.com" for Mumbai cluster
+    exotel_caller_id: str = ""  # Your ExoPhone virtual number (e.g. 0XXXXXXXXX)
+    exotel_app_id: str = ""  # Flow / Applet ID from Installed Apps
+
 
     # Vapi.ai configuration
     vapi_api_key: str = ""

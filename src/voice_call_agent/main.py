@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,6 +10,12 @@ from voice_call_agent.api.routes import router
 from voice_call_agent.api.telephony import router as telephony_router
 from voice_call_agent.api.vapi import router as vapi_router
 from voice_call_agent.core.config import settings
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    force=True,
+)
 
 app = FastAPI(title=settings.app_name)
 app.include_router(router)

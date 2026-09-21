@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -7,6 +9,11 @@ from typing import Any
 from voice_call_agent.core.config import settings
 from voice_call_agent.models.conversation import Message
 from voice_call_agent.providers.llm import LanguageModel
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+INITIAL_BACKOFF_SEC = 1.0
 
 
 class ExpLabsLanguageModel(LanguageModel):
@@ -37,7 +44,7 @@ class ExpLabsLanguageModel(LanguageModel):
         tools: list[dict[str, Any]] | None = None,
         model: str | None = None,
     ) -> dict[str, Any]:
-        """Synchronous chat completion adhering to gateway contract."""
+        """Synchronous chat completion with retry logic for rate limiting."""
         target_model = model or self.default_model
         url = f"{self.base_url}/chat/completions"
         payload: dict[str, Any] = {
@@ -47,17 +54,36 @@ class ExpLabsLanguageModel(LanguageModel):
         if tools:
             payload["tools"] = tools
 
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        data_bytes = json.dumps(payload).encode("utf-8")
+        last_error: Exception | None = None
+
+        for attempt in range(MAX_RETRIES):
+            req = urllib.request.Request(
+                url,
+                data=data_bytes,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as err:
+                last_error = err
+                if err.code == 429:
+                    backoff = INITIAL_BACKOFF_SEC * (2 ** attempt)
+                    logger.warning(
+                        "LLM rate limited (429), retrying in %.1fs (attempt %d/%d)",
+                        backoff, attempt + 1, MAX_RETRIES,
+                    )
+                    time.sleep(backoff)
+                    continue
+                raise
+
+        # All retries exhausted
+        raise last_error  # type: ignore[misc]
 
     async def reply(self, messages: list[Message]) -> str:
         """Async implementation of LanguageModel protocol."""
