@@ -22,6 +22,9 @@ if static_dir.exists():
 
 
 @app.get("/", include_in_schema=False)
+@app.get("/api", include_in_schema=False)
+@app.get("/api/index", include_in_schema=False)
+@app.get("/api/index.py", include_in_schema=False)
 async def website() -> HTMLResponse:
     index_file = static_dir / "index.html"
     if index_file.exists():
@@ -30,6 +33,7 @@ async def website() -> HTMLResponse:
 
 
 @app.get("/admin", include_in_schema=False)
+@app.get("/api/admin", include_in_schema=False)
 async def admin_dashboard() -> HTMLResponse:
     admin_file = static_dir / "admin.html"
     if admin_file.exists():
