@@ -136,11 +136,11 @@ async def test_end_to_end_voice_turn_over_websocket():
 
     from fastapi.testclient import TestClient
 
-    from voice_call_agent.main import app
+    from voice_call_agent.main import app as fastapi_app
     from voice_call_agent.providers.speech.codec import pcm16_to_mulaw
     from voice_call_agent.providers.telephony import session_manager
 
-    test_client = TestClient(app)
+    test_client = TestClient(fastapi_app)
     call_sid = "CA_E2E_VOICE_01"
     stream_sid = "MZ_E2E_01"
 

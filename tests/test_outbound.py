@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from voice_call_agent.main import app
+from voice_call_agent.main import app as fastapi_app
 
-client = TestClient(app)
+client = TestClient(fastapi_app)
 
 
 def test_outbound_call_missing_credentials():

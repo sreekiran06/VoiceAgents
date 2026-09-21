@@ -6,10 +6,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from voice_call_agent.core.config import settings
-from voice_call_agent.main import app
+from voice_call_agent.main import app as fastapi_app
 from voice_call_agent.providers.telephony import session_manager
 
-client = TestClient(app)
+client = TestClient(fastapi_app)
 
 
 def compute_twilio_signature(url: str, params: dict[str, str], auth_token: str) -> str:
