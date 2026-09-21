@@ -68,7 +68,7 @@ stt_provider, orchestrator = _init_speech_providers()
 
 def _get_stream_ws_url(request: Request) -> str:
     """Derive the WebSocket URL for the media stream from settings or request."""
-    base = settings.public_base_url.rstrip("/")
+    base = settings.base_url
     if base.startswith("https://"):
         ws_base = "wss://" + base[8:]
     elif base.startswith("http://"):

@@ -6,7 +6,18 @@ class Settings(BaseSettings):
 
     app_name: str = "Voice Call Agent"
     environment: str = "development"
-    public_base_url: str = "http://localhost:8000"
+    public_base_url: str = ""
+    render_external_url: str = ""  # Auto-populated by Render if deployed there
+
+    @property
+    def base_url(self) -> str:
+        """Resolve public base URL from explicit setting, Render environment, or localhost."""
+        if self.public_base_url and self.public_base_url != "http://localhost:8000":
+            return self.public_base_url.rstrip("/")
+        if self.render_external_url:
+            return self.render_external_url.rstrip("/")
+        return self.public_base_url or "http://localhost:8000"
+
     # LLM Provider: "gemini" or "explabs"
     llm_provider: str = "gemini"
     explabs_api_key: str = ""
