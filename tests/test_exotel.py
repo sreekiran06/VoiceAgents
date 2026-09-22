@@ -94,15 +94,20 @@ async def test_exotel_status_callback():
 @pytest.mark.anyio
 async def test_exotel_passthru_callback():
     call_sid = "exo_passthru_call_101"
-    response = client.post(
-        "/telephony/exotel/passthru",
-        data={"CallSid": call_sid, "From": "+919876543210", "To": "08012345678"},
-    )
-    assert response.status_code == 200
-    assert "application/xml" in response.headers["content-type"]
-    assert "<Response>" in response.text
-    assert "<Say>" in response.text
+    with patch(
+        "voice_call_agent.api.telephony.orchestrator.handle_turn",
+        new_callable=AsyncMock,
+        return_value=("నమస్కారం! నేను కిరణ్.", b"\x00" * 320, []),
+    ):
+        response = client.post(
+            "/telephony/exotel/passthru",
+            data={"CallSid": call_sid, "From": "+919876543210", "To": "08012345678"},
+        )
+        assert response.status_code == 200
+        assert "application/xml" in response.headers["content-type"]
+        assert "<Response>" in response.text
+        assert "<Say>" in response.text
 
-    session = await session_manager.get_by_call_id(call_sid)
-    assert session is not None
-    assert session.metadata.get("provider") == "exotel"
+        session = await session_manager.get_by_call_id(call_sid)
+        assert session is not None
+        assert session.metadata.get("provider") == "exotel"
