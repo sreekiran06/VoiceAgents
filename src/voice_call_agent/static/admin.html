@@ -8,7 +8,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/admin.css" />
+    <link rel="stylesheet" href="/assets/admin.css?v=3.4" />
+    <script>
+      (function() {
+        if (!localStorage.getItem("sk_admin_token")) {
+          document.documentElement.classList.add("not-authenticated");
+        }
+      })();
+    </script>
+    <style>
+      html.not-authenticated #auth-overlay, body.not-authenticated #auth-overlay { display: flex !important; }
+      html.not-authenticated .admin-content, html.not-authenticated .admin-header { filter: blur(4px); pointer-events: none; user-select: none; }
+    </style>
   </head>
   <body>
     <div class="admin-app">
@@ -32,6 +43,13 @@
         </div>
 
         <div class="header-actions">
+          <div class="admin-user-badge" id="admin-user-badge" style="display: none;">
+            <span class="user-avatar">🛡️</span>
+            <span class="user-email" id="admin-user-email">admin@skvoiceagents.com</span>
+            <button id="btn-admin-logout" class="btn btn-ghost btn-sm" title="Log out" style="color: #f87171; margin-left: 8px;">
+              Logout
+            </button>
+          </div>
           <button id="btn-admin-outbound-call" class="btn btn-outline" style="border-color: #3b82f6; color: #93c5fd;">
             <span class="btn-icon">📞</span> Trigger Phone Call
           </button>
@@ -170,97 +188,239 @@
       </main>
     </div>
 
-    <!-- Client Modal (Add / Edit) -->
+    <!-- Client Modal (Multi-Step Onboarding Wizard) -->
     <div class="modal-backdrop hidden" id="modal-backdrop">
-      <div class="modal-dialog">
+      <div class="modal-dialog wizard-dialog">
         <div class="modal-header">
-          <h3 id="modal-title">Add Business Client</h3>
+          <div>
+            <h3 id="modal-title">Onboard New Business Client</h3>
+            <p class="modal-subtitle" id="modal-subtitle">Step 1 of 4: Company & Telephony Details</p>
+          </div>
           <button class="btn-close" id="modal-close" aria-label="Close dialog">×</button>
         </div>
 
-        <form id="client-form" class="modal-form">
+        <!-- Wizard Stepper Indicator -->
+        <div class="wizard-stepper">
+          <div class="wizard-step-tab active" data-step="1">
+            <span class="step-num">1</span>
+            <span class="step-title">Company Info</span>
+          </div>
+          <div class="wizard-step-tab" data-step="2">
+            <span class="step-num">2</span>
+            <span class="step-title">Knowledge & Persona</span>
+          </div>
+          <div class="wizard-step-tab" data-step="3">
+            <span class="step-num">3</span>
+            <span class="step-title">LLM & Voice</span>
+          </div>
+          <div class="wizard-step-tab" data-step="4">
+            <span class="step-num">4</span>
+            <span class="step-title">Review & Deploy</span>
+          </div>
+        </div>
+
+        <form id="client-form" class="modal-form wizard-form">
           <input type="hidden" id="form-client-id" value="" />
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="form-name">Business Name *</label>
-              <input type="text" id="form-name" required placeholder="e.g. Sri Krishna Infra" />
+          <!-- STEP 1: Basic Business & Contact -->
+          <div class="wizard-step-pane active" id="wizard-step-1">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-name">Business Name *</label>
+                <input type="text" id="form-name" required placeholder="e.g. Sri Krishna Infra" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-contact">Contact Person *</label>
+                <input type="text" id="form-contact" required placeholder="e.g. Ramesh Reddy" />
+              </div>
             </div>
-            <div class="form-group flex-1">
-              <label for="form-contact">Contact Person *</label>
-              <input type="text" id="form-contact" required placeholder="e.g. Ramesh Reddy" />
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-phone">Contact Phone *</label>
+                <input type="tel" id="form-phone" required placeholder="+91 98490 12345" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-email">Contact Email *</label>
+                <input type="email" id="form-email" required placeholder="contact@example.in" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-industry">Industry Category *</label>
+                <select id="form-industry" required>
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="Clinics & Healthcare">Clinics & Healthcare</option>
+                  <option value="Coaching & EdTech">Coaching & EdTech</option>
+                  <option value="Local Services">Local Services</option>
+                  <option value="Other">Other (Custom)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-virtual-number">Virtual Telephony DID Number</label>
+                <input type="text" id="form-virtual-number" placeholder="e.g. 04041892488 or +91 866 254 9988" />
+                <small class="form-hint">Exotel (040...) or Twilio line for inbound routing</small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-plan">Subscription Plan</label>
+                <select id="form-plan">
+                  <option value="Starter">Starter (1,000 mins/mo)</option>
+                  <option value="Growth" selected>Growth (2,500 mins/mo)</option>
+                  <option value="Pro">Pro / Enterprise (5,000+ mins/mo)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-minutes-limit">Monthly Minutes Quota</label>
+                <input type="number" id="form-minutes-limit" min="100" step="100" value="2500" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Supported Telecalling Languages</label>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="languages" value="Telugu" checked />
+                  <span>Telugu (తెలుగు)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="languages" value="Hindi" checked />
+                  <span>Hindi (हिंदी)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="languages" value="English" checked />
+                  <span>English</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="form-phone">Contact Phone *</label>
-              <input type="tel" id="form-phone" required placeholder="+91 98490 00000" />
+          <!-- STEP 2: Business Knowledge & LLM Training -->
+          <div class="wizard-step-pane" id="wizard-step-2">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-agent-name">AI Agent Persona Name *</label>
+                <input type="text" id="form-agent-name" placeholder="e.g. Kiran / Pooja / Sneha" value="Kiran" />
+                <small class="form-hint">The name the AI introduces itself with on the call</small>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-greeting">Opening Greeting Message</label>
+                <input type="text" id="form-greeting" placeholder="e.g. నమస్కారం! మా సంస్థకి స్వాగతం..." value="నమస్కారం! మీకు ఎలా సహాయం చేయగలను?" />
+              </div>
             </div>
-            <div class="form-group flex-1">
-              <label for="form-email">Contact Email *</label>
-              <input type="email" id="form-email" required placeholder="contact@example.in" />
+
+            <div class="form-group">
+              <label for="form-knowledge-text">Business Knowledge, FAQs & Catalogs (Train LLM)</label>
+              <textarea id="form-knowledge-text" rows="5" placeholder="Paste FAQs, price list, project details, branch addresses, doctor timings, cancellation rules...
+
+Example:
+Q: Where is the project located?
+A: Financial District, Gachibowli, Hyderabad.
+Q: What is the starting price?
+A: 3BHK luxury apartments start from 1.45 Crores."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Or Upload Knowledge Document (.txt, .md, .csv, .pdf)</label>
+              <div class="file-dropzone" id="file-dropzone">
+                <input type="file" id="form-knowledge-file" accept=".txt,.md,.csv,.pdf,.json" style="display: none;" />
+                <div class="dropzone-content">
+                  <span class="dropzone-icon">📄</span>
+                  <div class="dropzone-text">
+                    <strong>Click to upload</strong> or drag & drop business document
+                    <small>Text will be extracted automatically into the knowledge base</small>
+                  </div>
+                </div>
+                <div id="file-upload-status" class="file-status" style="display: none;"></div>
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="form-industry">Industry Category *</label>
-              <select id="form-industry" required>
-                <option value="Real Estate">Real Estate</option>
-                <option value="Clinics & Healthcare">Clinics & Healthcare</option>
-                <option value="Coaching & EdTech">Coaching & EdTech</option>
-                <option value="Local Services">Local Services</option>
-                <option value="Other">Other</option>
-              </select>
+          <!-- STEP 3: LLM & Voice Provider Configuration -->
+          <div class="wizard-step-pane" id="wizard-step-3">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-llm-model">LLM Model Provider</label>
+                <select id="form-llm-model">
+                  <option value="gemini-3.5-flash-lite" selected>Google Gemini 3.5 Flash-Lite (Fastest, ~400ms)</option>
+                  <option value="gemini-3.6-flash">Google Gemini 3.6 Flash (High Reasoning)</option>
+                  <option value="custom-openai">Custom OpenAI-Compatible Endpoint</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-custom-api-key">Custom LLM API Key (Optional)</label>
+                <input type="password" id="form-custom-api-key" placeholder="Leave blank to use platform shared key" autocomplete="off" />
+                <small class="form-hint">Allows client to bring their own Gemini / LLM key</small>
+              </div>
             </div>
-            <div class="form-group flex-1">
-              <label for="form-virtual-number">Assigned Virtual Number</label>
-              <input type="text" id="form-virtual-number" placeholder="+91 40 4821 0000" />
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-voice-id">Primary Voice Accent</label>
+                <select id="form-voice-id">
+                  <option value="kavitha" selected>Kavitha (Natural Telugu / South Indian)</option>
+                  <option value="ishita">Ishita (Fluent Indian English)</option>
+                  <option value="ritu">Ritu (Clear Hindi)</option>
+                  <option value="amartya">Amartya (Male Voice)</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-webhook">Lead Webhook URL (CRM / Zapier)</label>
+                <input type="url" id="form-webhook" placeholder="https://crm.yourbusiness.com/api/voice-leads" />
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="form-plan">Plan Tier</label>
-              <select id="form-plan">
-                <option value="Starter">Starter (1,000 mins)</option>
-                <option value="Growth">Growth (2,500 mins)</option>
-                <option value="Pro">Pro / Enterprise (5,000+ mins)</option>
-              </select>
-            </div>
-            <div class="form-group flex-1">
-              <label for="form-minutes-limit">Monthly Minutes Quota</label>
-              <input type="number" id="form-minutes-limit" min="100" step="100" value="1000" />
+          <!-- STEP 4: Review & Deploy -->
+          <div class="wizard-step-pane" id="wizard-step-4">
+            <div class="review-summary-card">
+              <div class="review-header">
+                <div class="review-badge-icon" id="review-avatar">🏢</div>
+                <div>
+                  <h4 id="review-business-name">Business Name</h4>
+                  <p id="review-industry-plan" class="review-meta">Industry • Plan</p>
+                </div>
+              </div>
+
+              <div class="review-grid">
+                <div class="review-item">
+                  <span>Contact:</span>
+                  <strong id="review-contact">-</strong>
+                </div>
+                <div class="review-item">
+                  <span>Virtual Line:</span>
+                  <strong id="review-virtual-number" class="mono-text">-</strong>
+                </div>
+                <div class="review-item">
+                  <span>Agent Persona:</span>
+                  <strong id="review-agent-name">-</strong>
+                </div>
+                <div class="review-item">
+                  <span>LLM Model:</span>
+                  <strong id="review-llm-model">-</strong>
+                </div>
+                <div class="review-item full-width">
+                  <span>Languages:</span>
+                  <div id="review-languages" class="badge-row"></div>
+                </div>
+                <div class="review-item full-width">
+                  <span>Knowledge Base:</span>
+                  <small id="review-knowledge-preview" class="knowledge-preview-box">No custom text provided</small>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="form-group">
-            <label>Supported Telecalling Languages</label>
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" name="languages" value="Telugu" checked />
-                <span>Telugu (తెలుగు)</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="languages" value="Hindi" checked />
-                <span>Hindi (हिंदी)</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="languages" value="English" checked />
-                <span>English</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="form-webhook">CRM / WhatsApp Webhook URL (optional)</label>
-            <input type="url" id="form-webhook" placeholder="https://yourcrm.com/api/voice-leads" />
-          </div>
-
-          <div class="modal-footer">
+          <div class="modal-footer wizard-footer">
             <button type="button" class="btn btn-ghost" id="modal-cancel">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-client">Save Client</button>
+            <div class="wizard-nav-btns">
+              <button type="button" class="btn btn-outline" id="btn-wizard-prev" style="display: none;">← Back</button>
+              <button type="button" class="btn btn-primary" id="btn-wizard-next">Next Step →</button>
+              <button type="submit" class="btn btn-primary" id="btn-save-client" style="display: none; background: linear-gradient(135deg, #10b981, #059669); border: none;">🚀 Deploy AI Agent</button>
+            </div>
           </div>
         </form>
       </div>
@@ -315,90 +475,271 @@
 
     <!-- Slide-over Client Detail Drawer -->
     <aside class="drawer-backdrop hidden" id="drawer-backdrop">
-      <div class="drawer" id="drawer">
+      <div class="drawer drawer-expanded" id="drawer">
         <div class="drawer-header">
           <div class="drawer-titles">
-            <span class="drawer-eyebrow" id="drawer-industry">Real Estate</span>
+            <div class="drawer-eyebrow-row">
+              <span class="drawer-eyebrow" id="drawer-industry">Real Estate</span>
+              <span class="mono-text drawer-virtual-line" id="drawer-header-number">📞 +91 40 4821 5566</span>
+            </div>
             <h2 id="drawer-name">Client Name</h2>
             <div class="drawer-tags" id="drawer-tags"></div>
           </div>
           <button class="btn-close" id="drawer-close" aria-label="Close drawer">×</button>
         </div>
 
+        <!-- Drawer Navigation Tabs -->
+        <div class="drawer-tab-bar">
+          <button type="button" class="drawer-tab-btn active" data-tab="calls" id="tab-btn-calls">
+            💬 Calls & Chat Transcripts <span class="tab-count" id="badge-calls-count">0</span>
+          </button>
+          <button type="button" class="drawer-tab-btn" data-tab="leads" id="tab-btn-leads">
+            🎯 Captured Leads <span class="tab-count" id="badge-leads-count">0</span>
+          </button>
+          <button type="button" class="drawer-tab-btn" data-tab="config" id="tab-btn-config">
+            ⚙️ Agent & Account Config
+          </button>
+        </div>
+
         <div class="drawer-body">
-          <!-- Client Metrics Summary -->
-          <div class="drawer-section">
-            <h4 class="drawer-section-title">Calling Performance & Quota</h4>
-            <div class="drawer-stats-grid">
-              <div class="drawer-stat">
-                <small>Minutes Consumed</small>
-                <b id="drawer-minutes-display">0 / 1000</b>
-                <div class="mini-progress">
-                  <div class="mini-progress-bar" id="drawer-progress-bar" style="width: 0%"></div>
+          <!-- TAB 1: Calls, Audio Recording & Chat Transcripts -->
+          <div class="drawer-tab-content" id="tab-pane-calls">
+            <!-- Call Selector Chips -->
+            <div class="call-selector-bar" id="call-selector-bar">
+              <!-- Dynamically populated chips -->
+            </div>
+
+            <!-- Active Call Detail View -->
+            <div class="active-call-container" id="active-call-container">
+              <!-- Audio Recording Player -->
+              <div class="audio-player-card">
+                <div class="audio-player-top">
+                  <div class="audio-info">
+                    <span class="audio-icon">🎙️</span>
+                    <div>
+                      <strong id="audio-call-title">Call Recording</strong>
+                      <span class="audio-subtitle" id="audio-call-meta">Telephony Audio • 16kHz WAV</span>
+                    </div>
+                  </div>
+                  <div class="audio-badge" id="audio-lang-badge">Telugu (తెలుగు)</div>
+                </div>
+
+                <div class="audio-controls-row">
+                  <button type="button" class="btn-play-pause" id="btn-audio-play" aria-label="Play recording">
+                    <span id="play-icon">▶</span>
+                  </button>
+                  <div class="audio-scrubber-wrap">
+                    <input type="range" class="audio-scrubber" id="audio-scrubber" min="0" max="100" value="0" />
+                    <div class="audio-timestamps">
+                      <span id="audio-current-time">00:00</span>
+                      <span id="audio-total-duration">02:04</span>
+                    </div>
+                  </div>
+                  <a id="btn-audio-download" href="#" target="_blank" class="btn-audio-action" title="Open / Download WAV audio">
+                    ⬇
+                  </a>
+                </div>
+                <audio id="drawer-audio-element" preload="none" style="display: none;"></audio>
+              </div>
+
+              <!-- AI Call Insights Card -->
+              <div class="call-summary-card">
+                <div class="summary-card-header">
+                  <span>📋 <b>AI Call Summary & Intent</b></span>
+                  <span class="badge badge-intent" id="call-sentiment-badge">🔥 High Intent</span>
+                </div>
+                <p id="call-summary-text" class="call-summary-desc">
+                  Customer inquired about 3BHK flats in Gachibowli. AI Agent qualified budget and confirmed site visit.
+                </p>
+              </div>
+
+              <!-- WhatsApp / iMessage Chat-Style Transcript -->
+              <div class="chat-transcript-section">
+                <div class="chat-section-header">
+                  <span>💬 <b>Interactive Call Transcript</b></span>
+                  <span class="chat-subhint">Displaying natural spoken dialogue in chat bubbles</span>
+                </div>
+                <div class="chat-thread" id="chat-thread-messages">
+                  <!-- Injected chat bubbles -->
                 </div>
               </div>
-              <div class="drawer-stat">
-                <small>Qualified Leads</small>
-                <b id="drawer-leads-display">0</b>
-              </div>
-              <div class="drawer-stat">
-                <small>Bookings Made</small>
-                <b id="drawer-bookings-display">0</b>
-              </div>
-              <div class="drawer-stat">
-                <small>Virtual Line</small>
-                <b id="drawer-number-display" class="mono-text">-</b>
-              </div>
+            </div>
+
+            <!-- Empty calls state -->
+            <div class="empty-tab-state hidden" id="empty-calls-state">
+              <div class="empty-icon">☎️</div>
+              <h4>No call logs for this business yet</h4>
+              <p>Inbound customer calls to this virtual number will appear here with full chat transcripts and recordings.</p>
             </div>
           </div>
 
-          <!-- Configuration & Contact Details -->
-          <div class="drawer-section">
-            <h4 class="drawer-section-title">Account Configuration</h4>
-            <ul class="detail-list">
-              <li>
-                <span>Contact Person:</span>
-                <strong id="drawer-contact">-</strong>
-              </li>
-              <li>
-                <span>Phone / Email:</span>
-                <strong id="drawer-phone-email">-</strong>
-              </li>
-              <li>
-                <span>Subscription Plan:</span>
-                <strong id="drawer-plan">-</strong>
-              </li>
-              <li>
-                <span>Webhook Integration:</span>
-                <span id="drawer-webhook" class="mono-text">-</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Live Call Logs -->
-          <div class="drawer-section">
-            <div class="drawer-section-header">
-              <h4 class="drawer-section-title">Recent Customer Calls</h4>
-              <span class="badge badge-subtle" id="drawer-call-count">0 calls</span>
+          <!-- TAB 2: Captured Leads -->
+          <div class="drawer-tab-content" id="tab-pane-leads" style="display: none;">
+            <div class="leads-kpi-row">
+              <div class="lead-kpi">
+                <small>Total Leads</small>
+                <b id="lead-kpi-total">0</b>
+              </div>
+              <div class="lead-kpi">
+                <small>Converted / Booked</small>
+                <b id="lead-kpi-converted" style="color: #10b981;">0</b>
+              </div>
+              <div class="lead-kpi">
+                <small>Qualified</small>
+                <b id="lead-kpi-qualified" style="color: #3b82f6;">0</b>
+              </div>
+              <div class="lead-kpi">
+                <small>New Inquiries</small>
+                <b id="lead-kpi-new" style="color: #f59e0b;">0</b>
+              </div>
             </div>
 
-            <div class="call-logs-list" id="drawer-calls-list">
-              <!-- Injected by admin.js -->
+            <div class="leads-list-container" id="drawer-leads-list">
+              <!-- Dynamically populated lead cards -->
+            </div>
+
+            <div class="empty-tab-state hidden" id="empty-leads-state">
+              <div class="empty-icon">🎯</div>
+              <h4>No leads captured yet</h4>
+              <p>Customer requirements, budgets, and contact details gathered during voice calls will appear here.</p>
+            </div>
+          </div>
+
+          <!-- TAB 3: Agent & Account Configuration -->
+          <div class="drawer-tab-content" id="tab-pane-config" style="display: none;">
+            <!-- Client Metrics Summary -->
+            <div class="drawer-section">
+              <h4 class="drawer-section-title">Calling Performance & Quota</h4>
+              <div class="drawer-stats-grid">
+                <div class="drawer-stat">
+                  <small>Minutes Consumed</small>
+                  <b id="drawer-minutes-display">0 / 1000</b>
+                  <div class="mini-progress">
+                    <div class="mini-progress-bar" id="drawer-progress-bar" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div class="drawer-stat">
+                  <small>Qualified Leads</small>
+                  <b id="drawer-leads-display">0</b>
+                </div>
+                <div class="drawer-stat">
+                  <small>Bookings Made</small>
+                  <b id="drawer-bookings-display">0</b>
+                </div>
+                <div class="drawer-stat">
+                  <small>Virtual Line</small>
+                  <b id="drawer-number-display" class="mono-text">-</b>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configuration & Contact Details -->
+            <div class="drawer-section">
+              <h4 class="drawer-section-title">AI Persona & Brain Settings</h4>
+              <ul class="detail-list">
+                <li>
+                  <span>AI Persona Name:</span>
+                  <strong id="drawer-agent-name">Kiran</strong>
+                </li>
+                <li>
+                  <span>Opening Greeting:</span>
+                  <em id="drawer-greeting" style="color: #cbd5e1; font-size: 0.82rem;">-</em>
+                </li>
+                <li>
+                  <span>LLM Provider / Model:</span>
+                  <strong id="drawer-llm-model">Google Gemini 3.5 Flash-Lite</strong>
+                </li>
+                <li>
+                  <span>Contact Person:</span>
+                  <strong id="drawer-contact">-</strong>
+                </li>
+                <li>
+                  <span>Phone / Email:</span>
+                  <strong id="drawer-phone-email">-</strong>
+                </li>
+                <li>
+                  <span>Subscription Plan:</span>
+                  <strong id="drawer-plan">-</strong>
+                </li>
+                <li>
+                  <span>Webhook Integration:</span>
+                  <span id="drawer-webhook" class="mono-text">-</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
 
         <div class="drawer-footer">
-          <button id="btn-drawer-toggle-status" class="btn btn-outline flex-1">Pause Account</button>
-          <button id="btn-drawer-edit" class="btn btn-primary flex-1">Edit Client</button>
+          <a id="btn-drawer-open-page" href="#" class="btn btn-outline flex-1" style="border-color: #6366f1; color: #a5b4fc; text-align: center; justify-content: center; text-decoration: none;">
+            Open Client Page ↗
+          </a>
+          <button id="btn-drawer-toggle-status" class="btn btn-ghost flex-1">Pause</button>
+          <button id="btn-drawer-edit" class="btn btn-primary flex-1">Edit</button>
         </div>
       </div>
     </aside>
 
+    <!-- Admin Login Overlay Modal -->
+    <div class="auth-overlay" id="auth-overlay" style="display: none;">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-brand-badge">S</div>
+          <h2 class="auth-title">Admin Console Sign In</h2>
+          <p class="auth-sub">Access SK Voice Agents platform management and analytics</p>
+        </div>
+
+        <form id="auth-login-form" class="auth-form">
+          <div id="auth-error-banner" class="auth-error" style="display: none;"></div>
+
+          <div class="form-group">
+            <label for="auth-email">Admin Email</label>
+            <input
+              type="email"
+              id="auth-email"
+              name="email"
+              required
+              value="admin@skvoiceagents.com"
+              placeholder="admin@skvoiceagents.com"
+              autocomplete="username"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="auth-password">Password</label>
+            <input
+              type="password"
+              id="auth-password"
+              name="password"
+              required
+              value="admin123"
+              placeholder="admin123"
+              autocomplete="current-password"
+              class="form-control"
+            />
+          </div>
+
+          <div class="auth-actions">
+            <button type="submit" id="btn-auth-submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+              <span id="auth-btn-text">Sign In to Admin</span>
+            </button>
+          </div>
+
+          <div class="auth-demo-hint">
+            <span style="font-size: 0.82rem; color: var(--text-muted);">Default Credentials:</span>
+            <button type="button" id="btn-fill-demo-creds" class="btn-demo-link">
+              admin@skvoiceagents.com / admin123
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div class="toast-container" id="toast-container"></div>
 
-    <script src="/assets/web_phone.js"></script>
-    <script src="/assets/admin.js"></script>
+    <script src="/assets/web_phone.js?v=3.4"></script>
+    <script src="/assets/admin.js?v=3.4"></script>
   </body>
 </html>

@@ -3,10 +3,12 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
+from voice_call_agent.agent.prompt_templates import build_business_prompt
 from voice_call_agent.agent.prompts import SYSTEM_PROMPT
 from voice_call_agent.agent.tools.lead_tools import register_default_tools
 from voice_call_agent.agent.tools.registry import ToolRegistry
 from voice_call_agent.core.config import settings
+from voice_call_agent.core.context import BusinessContext
 from voice_call_agent.models.conversation import CallSession, Message
 from voice_call_agent.providers.llm.client import ExpLabsLanguageModel
 from voice_call_agent.providers.llm.gemini import GeminiLanguageModel
@@ -43,6 +45,81 @@ class VoiceAgentOrchestrator:
             register_default_tools(self.tools)
         self.system_prompt = system_prompt
 
+    def _resolve_prompt(self, session: CallSession) -> str:
+        """Resolve the system prompt for this call session.
+
+        Priority:
+        1. BusinessContext from session (multi-tenant)
+        2. Global SYSTEM_PROMPT (single-tenant fallback)
+        """
+        ctx = session.business_context
+        if ctx:
+            prompt = build_business_prompt(ctx)
+            if prompt:
+                return prompt
+        return self.system_prompt
+
+    def _get_enabled_tools(self, session: CallSession) -> list[dict[str, Any]]:
+        """Get tool schemas filtered by the business context's enabled tools."""
+        ctx = session.business_context
+        all_tools = self.tools.list_tools()
+        if ctx and ctx.enabled_tools:
+            enabled = set(ctx.enabled_tools)
+            return [t for t in all_tools if t.get("function", {}).get("name") in enabled]
+        return all_tools
+
+    def _match_knowledge_fallback(self, ctx: BusinessContext | None, user_text: str) -> str | None:
+        """Find the most relevant answer from business knowledge when LLM times out or is offline."""
+        if not ctx or not ctx.knowledge:
+            return None
+
+        clean_query = user_text.lower().strip()
+        words = [w for w in clean_query.replace("?", "").replace(".", "").replace(",", "").split() if len(w) > 2]
+
+        best_match: str | None = None
+        max_score = 0
+
+        for entry in ctx.knowledge:
+            q = entry.get("question", "").lower()
+            ans = entry.get("answer", "")
+            cat = entry.get("category", "").lower()
+
+            # Check direct question substring
+            if q and (q in clean_query or clean_query in q):
+                return ans
+
+            # Keyword score matching
+            score = 0
+            for w in words:
+                if w in q:
+                    score += 3
+                elif w in ans.lower():
+                    score += 1
+                if cat and w in cat:
+                    score += 2
+
+            if score > max_score and score >= 2:
+                max_score = score
+                # If answer contains dialog lines (e.g. 'ఏజెంట్: ...' or 'A: ...'), extract the agent response
+                if "ఏజెంట్:" in ans:
+                    matching_agent_line = None
+                    for line in ans.splitlines():
+                        if "ఏజెంట్:" in line:
+                            matching_agent_line = line.replace("ఏజెంట్:", "").strip()
+                            break
+                    best_match = matching_agent_line or ans
+                elif "A:" in ans:
+                    matching_a_line = None
+                    for line in ans.splitlines():
+                        if "A:" in line:
+                            matching_a_line = line.replace("A:", "").strip()
+                            break
+                    best_match = matching_a_line or ans
+                else:
+                    best_match = ans
+
+        return best_match
+
     async def handle_turn(
         self,
         session: CallSession,
@@ -57,13 +134,14 @@ class VoiceAgentOrchestrator:
         session.messages.append(Message(role="user", content=user_transcript))
 
         # 2. Build messages payload for LLM
+        prompt = self._resolve_prompt(session)
         llm_messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self.system_prompt}
+            {"role": "system", "content": prompt}
         ]
         for msg in session.messages:
             llm_messages.append({"role": msg.role, "content": msg.content})
 
-        tools_schema = self.tools.list_tools()
+        tools_schema = self._get_enabled_tools(session)
 
         # 3. Call LLM
         executed_tools: list[dict[str, Any]] = []
@@ -112,8 +190,15 @@ class VoiceAgentOrchestrator:
                     assistant_reply_text = "Thank you, I have recorded your request."
 
         except Exception as exc:  # noqa: BLE001
-            logger.error("LLM generation error: %s. Falling back to helpful response.", exc)
-            assistant_reply_text = "Thank you for reaching out. How can I assist you with your enquiry today?"
+            logger.warning("LLM call encountered error (%s). Using business knowledge base matching.", exc)
+            ctx = session.business_context
+            matched_reply = self._match_knowledge_fallback(ctx, user_transcript)
+            if matched_reply:
+                assistant_reply_text = matched_reply
+            elif ctx and ctx.fallback_message:
+                assistant_reply_text = ctx.fallback_message
+            else:
+                assistant_reply_text = "Thank you for reaching out. How can I assist you with your enquiry today?"
 
         # 4. Record assistant message in conversation history
         session.messages.append(Message(role="assistant", content=assistant_reply_text))

@@ -17,6 +17,8 @@ from pydantic import BaseModel
 
 from voice_call_agent.agent.orchestrator import VoiceAgentOrchestrator
 from voice_call_agent.core.config import settings
+from voice_call_agent.core.context import DEFAULT_CONTEXT
+from voice_call_agent.core.context_loader import resolve_business_context
 from voice_call_agent.models.conversation import Message
 from voice_call_agent.providers.speech.codec import mulaw_to_pcm16, pcm16_to_mulaw
 from voice_call_agent.providers.speech.stt import MockSpeechToTextProvider, SpeechToTextProvider
@@ -107,6 +109,7 @@ async def _send_pcm_audio_to_exotel(
         msg = {
             "event": "media",
             "stream_sid": stream_sid,
+            "streamSid": stream_sid,
             "media": {"payload": chunk_b64},
         }
         await websocket.send_text(json.dumps(msg))
@@ -116,6 +119,7 @@ async def _send_pcm_audio_to_exotel(
     mark_msg = {
         "event": "mark",
         "stream_sid": stream_sid,
+        "streamSid": stream_sid,
         "mark": {"name": "playback_done"},
     }
     await websocket.send_text(json.dumps(mark_msg))
@@ -379,23 +383,47 @@ async def media_stream_websocket(websocket: WebSocket) -> None:
                     is_exotel = (settings.telephony_provider == "exotel")
 
                 if stream_sid and call_sid:
+                    # Resolve destination number → BusinessContext
+                    to_number_raw = (
+                        start_data.get("to")
+                        or start_data.get("To")
+                        or start_data.get("custom_parameters", {}).get("to")
+                        or start_data.get("customParameters", {}).get("To")
+                        or settings.exotel_caller_id
+                    )
+                    try:
+                        context = await resolve_business_context(to_number_raw or "")
+                    except Exception as ctx_err:  # noqa: BLE001
+                        logger.warning("Failed to resolve business context: %s", ctx_err)
+                        context = DEFAULT_CONTEXT
+
                     session = await session_manager.get_or_create(
                         call_id=call_sid,
                         metadata={
                             "direction": "inbound",
                             "provider": "exotel" if is_exotel else "twilio",
                             "encoding": "pcm16" if is_exotel else "mulaw",
+                            "business_id": context.business_id,
                         },
                     )
+                    session.business_id = context.business_id
+                    session.business_context = context
                     await session_manager.link_stream(stream_sid, call_sid)
 
-                    # Send initial greeting
+                    logger.info(
+                        "Business context resolved: %s → %s (%s)",
+                        to_number_raw, context.business_id, context.business_name,
+                    )
+
+                    # Send initial greeting from business context
                     try:
-                        greeting_text = "నమస్కారం! SK Voice Agents కి స్వాగతం. మీకు ఎలా సహాయం చేయగలను?"
+                        greeting_text = context.greeting_text
                         session.messages.append(Message(role="assistant", content=greeting_text))
 
-                        logger.info("Synthesizing greeting for %s stream (is_exotel=%s)", stream_sid, is_exotel)
-                        greeting_res = await orchestrator.tts.synthesize(greeting_text, language="te-IN")
+                        # Determine greeting language from context
+                        greeting_lang = context.languages[0] if context.languages else "te-IN"
+                        logger.info("Synthesizing greeting for %s stream (is_exotel=%s, lang=%s)", stream_sid, is_exotel, greeting_lang)
+                        greeting_res = await orchestrator.tts.synthesize(greeting_text, language=greeting_lang)
 
                         if greeting_res and greeting_res.audio_mulaw_bytes:
                             vad.reset()
@@ -500,8 +528,11 @@ async def media_stream_websocket(websocket: WebSocket) -> None:
                                     )
                                 except Exception as llm_err:  # noqa: BLE001
                                     logger.exception("LLM error on stream %s: %s", stream_sid, llm_err)
-                                    fallback = "క్షమించండి, మీ మాట సరిగ్గా వినిపించలేదు. దయచేసి మళ్ళీ చెప్పగలరా?"
-                                    tts_result = await orchestrator.tts.synthesize(fallback, language="te-IN")
+                                    # Use business context fallback or default Telugu
+                                    sess_ctx = session.business_context if session else None
+                                    fallback = sess_ctx.fallback_message if sess_ctx else "క్షమించండి, మీ మాట సరిగ్గా వినిపించలేదు. దయచేసి మళ్ళీ చెప్పగలరా?"
+                                    fallback_lang = sess_ctx.languages[0] if sess_ctx and sess_ctx.languages else "te-IN"
+                                    tts_result = await orchestrator.tts.synthesize(fallback, language=fallback_lang)
                                     audio_mulaw = tts_result.audio_mulaw_bytes
                                     _text = fallback
 

@@ -9,6 +9,18 @@ class Settings(BaseSettings):
     public_base_url: str = ""
     render_external_url: str = ""  # Auto-populated by Render if deployed there
 
+    # Database (async SQLAlchemy)
+    database_url: str = "sqlite+aiosqlite:///./sk_voice_agents.db"
+
+    # JWT authentication
+    jwt_secret: str = "sk-voice-agents-secret-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_minutes: int = 480  # 8 hours
+
+    # Default admin credentials (used for initial seed only)
+    admin_email: str = "admin@skvoiceagents.com"
+    admin_password: str = "admin123"
+
     @property
     def base_url(self) -> str:
         """Resolve public base URL from explicit setting, Render environment, or localhost."""

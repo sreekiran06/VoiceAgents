@@ -4,15 +4,34 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+class LeadRecord(BaseModel):
+    id: str
+    name: str = "Anonymous"
+    phone: str = ""
+    email: str | None = None
+    requirement: str
+    budget: str | None = None
+    location: str | None = None
+    timeline: str | None = None
+    status: Literal["new", "contacted", "qualified", "converted", "lost"] = "new"
+    created_at: str = Field(
+        default_factory=lambda: datetime.now(UTC).strftime("%Y-%m-%d %H:%M")
+    )
+    notes: str | None = None
+    call_id: str | None = None
+
+
 class CallRecord(BaseModel):
     call_id: str
     caller_phone: str
     call_time: str
     duration_seconds: int
-    language_detected: str
-    status: Literal["completed", "missed", "transferred"]
+    language_detected: str = "Telugu"
+    status: Literal["completed", "missed", "transferred", "in-progress"] = "completed"
+    sentiment: Literal["Positive", "Neutral", "Urgent", "Inquiry", "Follow-up"] = "Positive"
     summary: str
-    transcript: list[dict[str, str]] = Field(default_factory=list)
+    recording_url: str | None = None
+    transcript: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ClientBase(BaseModel):
@@ -27,6 +46,11 @@ class ClientBase(BaseModel):
     status: Literal["active", "paused", "onboarding"] = "active"
     monthly_minutes_limit: int = Field(default=1000, ge=100)
     webhook_url: str | None = None
+    agent_name: str | None = None
+    greeting_text: str | None = None
+    knowledge_text: str | None = None
+    custom_llm_api_key: str | None = None
+    llm_model: str | None = None
 
 
 class ClientCreate(ClientBase):
@@ -45,6 +69,11 @@ class ClientUpdate(BaseModel):
     status: Literal["active", "paused", "onboarding"] | None = None
     monthly_minutes_limit: int | None = None
     webhook_url: str | None = None
+    agent_name: str | None = None
+    greeting_text: str | None = None
+    knowledge_text: str | None = None
+    custom_llm_api_key: str | None = None
+    llm_model: str | None = None
 
 
 class Client(ClientBase):
@@ -56,4 +85,5 @@ class Client(ClientBase):
         default_factory=lambda: datetime.now(UTC).strftime("%Y-%m-%d %H:%M")
     )
     recent_calls: list[CallRecord] = Field(default_factory=list)
+    leads: list[LeadRecord] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

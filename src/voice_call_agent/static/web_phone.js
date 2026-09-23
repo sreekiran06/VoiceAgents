@@ -77,6 +77,7 @@
       const container = document.createElement("div");
       container.id = "webphone-modal";
       container.className = "webphone-backdrop hidden";
+      container.style.display = "none";
       container.innerHTML = `
         <div class="webphone-card">
           <div class="webphone-header">
@@ -123,14 +124,22 @@
     }
 
     show() {
-      document.getElementById("webphone-modal").classList.remove("hidden");
+      const modal = document.getElementById("webphone-modal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        modal.style.display = "flex";
+      }
     }
 
     hide() {
       if (this.isCallActive) {
         this.endCall();
       }
-      document.getElementById("webphone-modal").classList.add("hidden");
+      const modal = document.getElementById("webphone-modal");
+      if (modal) {
+        modal.classList.add("hidden");
+        modal.style.display = "none";
+      }
     }
 
     async toggleCall() {

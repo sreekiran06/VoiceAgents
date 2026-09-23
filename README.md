@@ -1,13 +1,15 @@
 # SK Voice Agents 🎙️⚡
 
-**Multilingual AI Voice Calling Platform for Indian Businesses**
+**Enterprise Multi-Tenant AI Voice Calling Platform for Indian Businesses**
 
-SK Voice Agents is an enterprise-grade, low-latency AI telephone agent built with **FastAPI**, **Google Gemini**, **Sarvam AI**, and **Exotel / Twilio**. It handles automated inbound customer support, lead qualification, and appointment booking in **Telugu**, **Hindi**, and **Indian English** with human-like conversation capabilities.
+SK Voice Agents is a secure, high-performance multi-tenant AI telephone agent platform built with **FastAPI**, **Google Gemini**, **Sarvam AI**, and **Exotel / Twilio**. It enables Indian businesses across industries to deploy personalized, multilingual voice agents that handle inbound support, lead qualification, and appointment booking in **Telugu**, **Hindi**, and **Indian English** with sub-second response latency.
 
 ---
 
 ## 🌟 Key Features
 
+- **🏢 True Multi-Tenant Architecture**: Single unified platform hosting multiple clients with dedicated businesses, custom personas, tailored knowledge bases, business hours, and phone number routing.
+- **⚡ Zero Per-Frame Latency Overhead**: Single-query `BusinessContext` resolution at call start with in-memory 5-minute LRU caching—zero database queries during active audio streaming.
 - **🧠 Google Gemini LLM Engine**: Powered by `gemini-3.5-flash-lite` with intelligent fallback (`gemini-3.6-flash`), responding in under 0.6s with natural Indian speech patterns.
 - **🗣️ Multilingual Speech (Sarvam AI)**:
   - **Speech-to-Text (STT)**: Sarvam `saaras:v3` with parallel multi-language transcription across Telugu (`te-IN`), English (`en-IN`), and Hindi (`hi-IN`).
@@ -15,11 +17,10 @@ SK Voice Agents is an enterprise-grade, low-latency AI telephone agent built wit
 - **📞 Dual Telephony Integration**:
   - **Exotel Voicebot**: Full-duplex WebSocket streaming with raw 16-bit 8 kHz Linear PCM audio (`slin`).
   - **Twilio Media Streams**: Bi-directional 8 kHz G.711 μ-law audio streaming with DTMF and mark tracking.
+- **🏭 Industry-Specific Prompt Engine**: Dynamic persona generation for Real Estate, Healthcare, Education, Restaurants, Hotels, Home Services, and E-commerce.
 - **⚡ Smart VAD & Interruption Handling**: Ring-buffered Voice Activity Detection (VAD) that captures entire phrases without clipping, supports natural conversational pauses, and instantly halts playback upon caller interruption.
-- **💻 Modern Web & Admin Dashboard**:
-  - **Landing Page**: Modern client-facing website with live click-to-call banners and demo booking.
-  - **In-Browser Web Phone**: WebRTC/WebSocket audio simulator for testing the voice agent directly from your browser mic.
-  - **Admin Console (`/admin`)**: Client management, live call logs, audio transcripts, and usage metrics.
+- **🔐 Gated Admin Console (`/admin`)**: Independent, secure admin portal protected with JWT authentication for client management, live call logs, audio transcripts, business configuration, and platform analytics.
+- **💻 Modern Public Website**: Customer-facing landing page with live dialer banners, product tour, and interactive in-browser audio test simulator.
 
 ---
 
@@ -37,28 +38,65 @@ voice-call-agent/
 ├── api/
 │   └── index.py                # Vercel serverless adapter
 ├── src/voice_call_agent/
-│   ├── main.py                 # FastAPI application factory
+│   ├── main.py                 # FastAPI application factory & DB lifecycle
 │   ├── api/
+│   │   ├── analytics.py        # Platform overview & call analytics API
+│   │   ├── auth_routes.py      # Admin JWT login & client API keys
+│   │   ├── businesses.py       # Multi-tenant Business CRUD endpoints
 │   │   ├── clients.py          # Client management CRUD endpoints
+│   │   ├── knowledge.py        # Business FAQ & knowledge base CRUD
 │   │   ├── routes.py           # Health and utility routes
 │   │   ├── telephony.py        # Bi-directional WebSocket & webhooks (Exotel/Twilio)
 │   │   └── vapi.py             # Optional Vapi.ai assistant setup
 │   ├── agent/
-│   │   ├── orchestrator.py     # Turn management, STT/LLM/TTS pipeline
-│   │   ├── prompts.py          # Human persona (Kiran from Hyderabad) instructions
+│   │   ├── orchestrator.py     # Turn management, multi-tenant STT/LLM/TTS pipeline
+│   │   ├── prompt_templates.py # Dynamic industry-specific prompt generator
+│   │   ├── prompts.py          # Default human persona fallback
 │   │   └── tools/              # Business tools (lead qualification, appointment booking)
 │   ├── core/
-│   │   └── config.py           # Pydantic Settings & dynamic environment resolution
+│   │   ├── auth.py             # Password hashing, JWT auth, and API key verification
+│   │   ├── config.py           # Pydantic Settings & dynamic environment resolution
+│   │   ├── context.py          # Immutable BusinessContext dataclass
+│   │   ├── context_loader.py   # Phone-to-Business resolver with LRU cache
+│   │   ├── database.py         # Async SQLAlchemy engine & session factory
+│   │   └── seed.py             # Default admin & sample businesses seeder
 │   ├── models/
-│   │   ├── client.py           # Client schema models
-│   │   └── conversation.py     # CallSession and message data models
+│   │   ├── client.py           # Legacy Client schema models
+│   │   ├── conversation.py     # CallSession and message data models
+│   │   └── db_models.py        # SQLAlchemy ORM models (Admin, Client, Business, Config, Knowledge, etc.)
 │   ├── providers/
 │   │   ├── llm/                # Gemini & ExpLabs REST clients with retry logic
 │   │   ├── speech/             # Sarvam STT/TTS, codec transcoding, and VAD buffer
 │   │   └── telephony/          # Exotel & Twilio provider implementations
 │   └── static/                 # Frontend landing page, Web Phone, and Admin Console
-└── tests/                      # Automated unit and integration test suite (32 tests)
+└── tests/                      # Automated unit and integration test suite (38 tests)
 ```
+
+---
+
+## 🔐 Default Super-Admin Credentials
+
+The platform initializes the database with a pre-configured super-admin account on startup:
+
+| Field | Default Value |
+| :--- | :--- |
+| **Email** | `admin@skvoiceagents.com` |
+| **Password** | `admin123` |
+| **Role** | `super_admin` |
+| **Login URL** | `http://localhost:8000/admin` |
+
+---
+
+## 📡 Pre-Seeded Sample Businesses
+
+The application automatically seeds 4 industry businesses for testing multi-tenant call routing:
+
+| Business Name | Industry | Virtual DID | Agent Name | Supported Languages |
+| :--- | :--- | :--- | :--- | :--- |
+| **Sri Krishna Infra - Gachibowli** | Real Estate | `04041892488` | Kiran | Telugu, English, Hindi |
+| **Apollo Clinic - Vijayawada** | Healthcare | `+91 866 244 1122` | Dr. Priya's Assistant | Telugu, English, Hindi |
+| **Narayana IIT & NEET Academy** | Education | `+91 40 2345 6789` | Sneha | Telugu, English |
+| **UrbanFix Home Services** | Home Services | `+91 80 0123 4567` | Rajesh | Hindi, English |
 
 ---
 
@@ -104,6 +142,8 @@ voice-call-agent/
    APP_NAME=Voice Call Agent
    ENVIRONMENT=development
    PUBLIC_BASE_URL=http://localhost:8000
+   DATABASE_URL=sqlite+aiosqlite:///./sk_voice_agents.db
+   SECRET_KEY=sk-secret-jwt-key-for-admin-sessions-change-in-production
 
    # LLM Provider
    LLM_PROVIDER=gemini
@@ -124,7 +164,7 @@ voice-call-agent/
 
 5. **Start the development server**:
    ```bash
-   uvicorn voice_call_agent.main:app --reload --port 8000
+   uvicorn main:app --reload --port 8000
    ```
 
 6. **Expose locally for telephony webhooks** (using ngrok):
@@ -137,7 +177,7 @@ voice-call-agent/
 
 ## 🧪 Testing
 
-Run the automated test suite with pytest:
+Run the full automated test suite with pytest (38 tests):
 
 ```bash
 pytest
@@ -151,17 +191,35 @@ ruff check .
 
 ---
 
-## 🌐 Endpoints & Web Interfaces
+## 🌐 Endpoints & API Reference
 
-| URL | Description |
-|---|---|
-| `http://localhost:8000/` | Public Marketing Landing Page with live dialer |
-| `http://localhost:8000/admin` | Admin Dashboard (Clients, Analytics, Call Logs) |
-| `http://localhost:8000/docs` | OpenAPI / Swagger Interactive Documentation |
-| `http://localhost:8000/health` | Healthcheck endpoint (`{"status": "ok"}`) |
-| `ws://localhost:8000/telephony/media-stream` | Exotel/Twilio Bi-directional Audio WebSocket |
-| `POST /telephony/exotel/status` | Exotel Call Status Webhook Callback |
-| `POST /telephony/inbound` | Twilio Inbound Call Voice Webhook |
+### Web Interfaces
+| URL | Access | Description |
+| :--- | :--- | :--- |
+| `http://localhost:8000/` | Public | Customer marketing landing page with in-browser audio test simulator |
+| `http://localhost:8000/admin` | Private (Auth Gated) | Admin Console (Clients, Businesses, Call Transcripts, KPIs) |
+| `http://localhost:8000/docs` | Public | Interactive OpenAPI / Swagger documentation |
+| `http://localhost:8000/health` | Public | Healthcheck endpoint (`{"status": "ok"}`) |
+
+### Multi-Tenant REST APIs
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Super-admin login; returns Bearer JWT token |
+| `POST` | `/api/auth/api-keys` | Generate/regenerate API keys for tenant clients |
+| `GET` | `/api/businesses` | List all businesses with active configs, virtual numbers, and hours |
+| `POST` | `/api/businesses` | Register a new business with nested config and DIDs |
+| `GET` | `/api/businesses/{id}/knowledge` | Retrieve FAQ knowledge base entries for a business |
+| `POST` | `/api/businesses/{id}/knowledge` | Add a FAQ entry with category and priority |
+| `GET` | `/api/analytics/overview` | Platform-wide KPIs (clients, businesses, calls, leads, bookings) |
+| `GET` | `/api/analytics/calls` | Tenant-scoped historical call analytics and duration metrics |
+
+### Telephony & Streaming
+| Protocol | Endpoint | Description |
+| :--- | :--- | :--- |
+| `WS` | `/telephony/media-stream` | Exotel/Twilio Bi-directional Audio WebSocket |
+| `POST` | `/telephony/call` | Trigger outbound phone call via Exotel or Twilio |
+| `POST` | `/telephony/exotel/status` | Exotel Call Status Webhook Callback |
+| `POST` | `/telephony/inbound` | Twilio Inbound Voice Webhook |
 
 ---
 
@@ -173,7 +231,7 @@ ruff check .
 2. Create a new **Web Service**:
    - **Environment**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt && pip install -e .`
-   - **Start Command**: `uvicorn voice_call_agent.main:app --host 0.0.0.0 --port $PORT`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 3. Add your environment variables in Render's dashboard.
 4. Set your Exotel Voicebot URL to `wss://<your-render-app>.onrender.com/telephony/media-stream`.
 
@@ -191,13 +249,13 @@ docker compose up -d --build
 
 ### Option 3: Vercel (Frontend & Serverless)
 
-The project includes `vercel.json` and `api/index.py` configured for one-click deployment on [Vercel](https://vercel.com). Pushing to `main` automatically triggers deployment.
+The project includes `vercel.json` and `api/index.py` configured for deployment on [Vercel](https://vercel.com). Pushing to `main` automatically triggers deployment.
 
 ---
 
 ## 🔒 Responsible AI Calling & Compliance
 
-- **AI Disclosure**: Clearly informs callers that they are speaking with Kiran from SK Voice Agents.
+- **AI Disclosure**: Clearly informs callers of the agent identity on every turn.
 - **DND & Consent**: Supports DND scrubbing and opt-out workflows compliant with TRAI / Indian telecom guidelines.
 - **Secure Handling**: Audio streams and credentials are strictly isolated and never stored unencrypted.
 

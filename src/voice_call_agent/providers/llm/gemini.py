@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 MAX_RETRIES = 3
 INITIAL_BACKOFF_SEC = 0.5
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
-_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.6-flash"]
+_FALLBACK_MODELS = ["gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-3.6-flash"]
 
 
 class GeminiLanguageModel(LanguageModel):
@@ -87,7 +87,7 @@ class GeminiLanguageModel(LanguageModel):
 
         last_error: Exception | None = None
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             for target_model in models_to_try:
                 url = f"{_GEMINI_BASE}/models/{target_model}:generateContent?key={self.api_key}"
                 for attempt in range(2):

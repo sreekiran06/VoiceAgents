@@ -24,6 +24,7 @@ class AudioTurnBuffer:
         silence_timeout_ms: int = 700,
         sample_rate: int = 8000,
         pre_speech_ms: int = 300,
+        max_utterance_ms: int = 7000,
         chunk_duration_ms: int = 20,
         **kwargs,
     ) -> None:
@@ -32,6 +33,7 @@ class AudioTurnBuffer:
         self.silence_timeout_ms = silence_timeout_ms
         self.sample_rate = sample_rate
         self.pre_speech_ms = pre_speech_ms
+        self.max_utterance_ms = max_utterance_ms
 
         # Ring buffer for pre-speech audio (stores recent PCM chunks)
         self._pre_buffer: collections.deque[bytes] = collections.deque()
@@ -92,18 +94,18 @@ class AudioTurnBuffer:
         else:
             self._silence_ms += chunk_ms
 
-            # Check if turn is complete
-            if self._silence_ms >= self.silence_timeout_ms:
-                total_speech = self._speech_ms
-                assembled_pcm = b"".join(self._recording_chunks)
-                self.reset()
+        # Check if turn is complete (silence detected OR reached maximum utterance limit)
+        if self._silence_ms >= self.silence_timeout_ms or (self._speech_ms + self._silence_ms) >= self.max_utterance_ms:
+            total_speech = self._speech_ms
+            assembled_pcm = b"".join(self._recording_chunks)
+            self.reset()
 
-                # Discard false triggers (clicks/pops shorter than minimum speech)
-                if total_speech < self.min_speech_duration_ms:
-                    return None
+            # Discard false triggers (clicks/pops shorter than minimum speech)
+            if total_speech < self.min_speech_duration_ms:
+                return None
 
-                # Return full utterance WAV
-                return create_wav(assembled_pcm, sample_rate=self.sample_rate, channels=1)
+            # Return full utterance WAV
+            return create_wav(assembled_pcm, sample_rate=self.sample_rate, channels=1)
 
         return None
 

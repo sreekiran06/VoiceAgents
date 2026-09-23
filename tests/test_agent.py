@@ -214,7 +214,7 @@ async def test_end_to_end_voice_turn_over_websocket():
 
         # Read responses emitted by server
         received_media = False
-        received_mark = False
+        mark_count = 0
         for _ in range(100):
             try:
                 raw = ws.receive_text()
@@ -223,13 +223,14 @@ async def test_end_to_end_voice_turn_over_websocket():
                     received_media = True
                     assert "payload" in data["media"]
                 elif data.get("event") == "mark":
-                    received_mark = True
-                    break
+                    mark_count += 1
+                    if mark_count >= 2:
+                        break
             except Exception:  # noqa: BLE001
                 break
 
         assert received_media is True
-        assert received_mark is True
+        assert mark_count >= 1
 
         # Finish stream
         ws.send_text(json.dumps({"event": "stop", "streamSid": stream_sid}))
